@@ -33,3 +33,14 @@ coverage/
 # Misc
 *.pnp
 .pnp.js
+
+# Zip files
+*.zip
+
+# Extra/backup files
+extra files/
+
+# Unused public assets
+public/icons-and-splash/
+public/react.png
+public/react (2).png
