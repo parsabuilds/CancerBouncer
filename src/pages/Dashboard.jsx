@@ -1,56 +1,41 @@
 import { useNavigate } from 'react-router-dom';
 import { BarChart3, ChevronRight, AlertTriangle, Shield } from 'lucide-react';
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Cell,
-  ResponsiveContainer,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell, ResponsiveContainer,
 } from 'recharts';
 
-const CANCER_COLORS = {
-  general: '#ef4444',
-  lung: '#3b82f6',
-  colorectal: '#10b981',
-  breast: '#ec4899',
-  prostate: '#f59e0b',
+const COLORS = {
+  general: '#ef4444', lung: '#4f8cff', colorectal: '#2dd4bf',
+  breast: '#f472b6', prostate: '#fbbf24',
 };
 
 const CustomTooltip = ({ active, payload, label }) => {
-  if (active && payload && payload.length) {
-    return (
-      <div className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 shadow-xl">
-        <p className="text-white font-medium text-sm">{label}</p>
-        <p className="text-gray-300 text-sm mt-1">
-          Risk: <span className="text-white font-semibold">{payload[0].value}%</span>
-        </p>
-      </div>
-    );
-  }
-  return null;
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="card !p-3 !rounded-xl shadow-2xl">
+      <p className="text-white font-semibold text-sm" style={{ fontFamily: 'var(--font-display)' }}>{label}</p>
+      <p className="text-[#7b8db5] text-sm mt-1">
+        Risk: <span className="text-white font-bold">{payload[0].value}%</span>
+      </p>
+    </div>
+  );
 };
 
 export default function Dashboard({ assessmentCompleted, assessmentResults }) {
-  const navigate = useNavigate();
+  const nav = useNavigate();
 
   if (!assessmentCompleted || !assessmentResults) {
     return (
-      <div className="min-h-screen bg-gray-950 px-4 py-6 flex items-center justify-center">
-        <div className="max-w-lg mx-auto text-center">
-          <div className="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Shield className="w-10 h-10 text-gray-500" />
+      <div className="min-h-screen bg-atmosphere flex items-center justify-center px-8 grain">
+        <div className="text-center max-w-sm">
+          <div className="w-24 h-24 bg-[#131c30] rounded-full flex items-center justify-center mx-auto mb-8 ring-1 ring-white/5">
+            <Shield className="w-11 h-11 text-[#3a4560]" />
           </div>
-          <h2 className="text-2xl font-bold text-white mb-3">No Assessment Yet</h2>
-          <p className="text-gray-400 mb-8 leading-relaxed">
+          <h2 className="text-2xl font-extrabold text-white mb-3" style={{ fontFamily: 'var(--font-display)' }}>No Assessment Yet</h2>
+          <p className="text-[#5a6a8a] text-[15px] leading-relaxed mb-10">
             Complete your cancer risk assessment to see personalized results and recommendations.
           </p>
-          <button
-            onClick={() => navigate('/assessment')}
-            className="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-8 py-3 rounded-xl transition-all duration-200 active:scale-95"
-          >
+          <button onClick={() => nav('/assessment')} className="btn-primary max-w-[260px] mx-auto">
             Start Assessment
           </button>
         </div>
@@ -60,97 +45,81 @@ export default function Dashboard({ assessmentCompleted, assessmentResults }) {
 
   const { cancerRisks, summary } = assessmentResults;
 
-  const filteredRisks = Object.entries(cancerRisks || {})
-    .filter(([, data]) => data && data.risk > 0)
-    .map(([key, data]) => ({
-      key,
-      name: data.name || key,
-      risk: data.risk,
-      reasoning: data.reasoning || '',
-      color: CANCER_COLORS[key] || '#6b7280',
+  const risks = Object.entries(cancerRisks || {})
+    .filter(([, d]) => d?.risk > 0)
+    .map(([k, d]) => ({
+      key: k, name: d.name || k, risk: d.risk,
+      reasoning: d.reasoning || '', color: COLORS[k] || '#6b7280',
     }));
 
-  const chartData = filteredRisks.map((r) => ({
+  const chartData = risks.map(r => ({
     name: r.name.replace(' Cancer', '').replace(' Risk', ''),
-    risk: r.risk,
-    color: r.color,
+    risk: r.risk, color: r.color,
   }));
 
   return (
-    <div className="min-h-screen bg-gray-950 px-4 py-6">
-      <div className="max-w-lg mx-auto">
-        <div className="flex items-center gap-3 mb-6">
-          <BarChart3 className="w-7 h-7 text-blue-500" />
-          <h1 className="text-2xl font-bold text-white">Your Risk Assessment</h1>
+    <div className="min-h-screen bg-atmosphere px-6 pt-10 pb-28 grain">
+      <div className="max-w-[480px] mx-auto">
+        {/* Title */}
+        <div className="flex items-center gap-3.5 mb-8">
+          <div className="w-10 h-10 bg-[#4f8cff]/10 rounded-xl flex items-center justify-center">
+            <BarChart3 className="w-5 h-5 text-[#4f8cff]" />
+          </div>
+          <h1 className="text-[24px] font-extrabold text-white tracking-tight" style={{ fontFamily: 'var(--font-display)' }}>
+            Your Risk Assessment
+          </h1>
         </div>
 
+        {/* Summary */}
         {summary && (
-          <div className="bg-gray-900 border-l-4 border-blue-500 rounded-r-xl p-4 mb-6">
-            <p className="text-gray-300 text-sm leading-relaxed">{summary}</p>
+          <div className="card !border-l-[3px] !border-l-[#4f8cff] mb-8">
+            <p className="text-[#8b9cc0] text-[14px] leading-[1.7]">{summary}</p>
           </div>
         )}
 
-        <div className="bg-gray-900 rounded-2xl p-4 mb-6">
-          <h2 className="text-white font-semibold text-lg mb-4">Risk Overview</h2>
-          <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={chartData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-              <XAxis
-                dataKey="name"
-                tick={{ fill: '#9ca3af', fontSize: 12 }}
-                axisLine={{ stroke: '#4b5563' }}
-                tickLine={false}
-              />
-              <YAxis
-                domain={[0, 100]}
-                tick={{ fill: '#9ca3af', fontSize: 12 }}
-                axisLine={{ stroke: '#4b5563' }}
-                tickLine={false}
-                tickFormatter={(v) => `${v}%`}
-              />
-              <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.05)' }} />
-              <Bar dataKey="risk" radius={[6, 6, 0, 0]} maxBarSize={48}>
-                {chartData.map((entry, index) => (
-                  <Cell key={index} fill={entry.color} />
-                ))}
+        {/* Chart */}
+        <div className="card mb-8">
+          <h2 className="text-white font-bold text-[17px] mb-6" style={{ fontFamily: 'var(--font-display)' }}>Risk Overview</h2>
+          <ResponsiveContainer width="100%" height={260}>
+            <BarChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#1a2540" vertical={false} />
+              <XAxis dataKey="name" tick={{ fill: '#5a6a8a', fontSize: 11, fontFamily: 'DM Sans' }} axisLine={false} tickLine={false} />
+              <YAxis domain={[0, 100]} tick={{ fill: '#3a4560', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
+              <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.02)' }} />
+              <Bar dataKey="risk" radius={[8, 8, 0, 0]} maxBarSize={42}>
+                {chartData.map((e, i) => <Cell key={i} fill={e.color} />)}
               </Bar>
             </BarChart>
           </ResponsiveContainer>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 mb-8">
-          {filteredRisks.map((item) => (
-            <div
-              key={item.key}
-              className="bg-gray-900 rounded-xl p-4 border-l-4 transition-all duration-200"
-              style={{ borderLeftColor: item.color }}
-            >
-              <p className="text-gray-400 text-xs font-medium mb-1">{item.name}</p>
-              <p className="text-3xl font-bold mb-2" style={{ color: item.color }}>
-                {item.risk}%
-              </p>
-              <div className="w-full bg-gray-800 rounded-full h-1.5 mb-3">
-                <div
-                  className="h-1.5 rounded-full transition-all duration-500"
-                  style={{ width: `${item.risk}%`, backgroundColor: item.color }}
-                />
+        {/* Risk cards */}
+        <div className="grid grid-cols-2 gap-4 mb-10">
+          {risks.map(r => (
+            <div key={r.key} className="card !p-5 !border-l-[3px]" style={{ borderLeftColor: r.color }}>
+              <p className="text-[#5a6a8a] text-[11px] font-semibold uppercase tracking-wider mb-2">{r.name}</p>
+              <p className="text-[28px] font-extrabold mb-3" style={{ color: r.color, fontFamily: 'var(--font-display)' }}>{r.risk}%</p>
+              <div className="w-full bg-[#0c1221] rounded-full h-[5px] mb-3">
+                <div className="h-full rounded-full transition-all duration-700" style={{ width: `${r.risk}%`, backgroundColor: r.color }} />
               </div>
-              <p className="text-gray-500 text-xs leading-relaxed">{item.reasoning}</p>
+              <p className="text-[#3a4560] text-[11px] leading-relaxed">{r.reasoning}</p>
             </div>
           ))}
         </div>
 
+        {/* CTA */}
         <button
-          onClick={() => navigate('/recommendations')}
-          className="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.98] mb-6"
+          onClick={() => nav('/recommendations')}
+          className="btn-primary flex items-center justify-center gap-2.5 mb-8"
         >
           View Recommendations
           <ChevronRight className="w-5 h-5" />
         </button>
 
-        <div className="flex items-start gap-2 bg-gray-900/50 rounded-xl p-4">
-          <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
-          <p className="text-gray-500 text-xs leading-relaxed">
+        {/* Disclaimer */}
+        <div className="flex items-start gap-3 bg-[#0c1221] rounded-2xl px-5 py-4 border border-white/[0.03]">
+          <AlertTriangle className="w-4 h-4 text-[#fbbf24] mt-0.5 shrink-0" />
+          <p className="text-[#3a4560] text-[11px] leading-relaxed">
             This assessment is for educational purposes only and does not constitute medical advice.
             Please consult a healthcare professional.
           </p>

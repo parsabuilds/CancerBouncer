@@ -1,56 +1,35 @@
 import { useNavigate } from 'react-router-dom';
-import { Stethoscope, Heart, Shield, ChevronRight } from 'lucide-react';
+import { Stethoscope, Heart, Shield, ArrowLeft } from 'lucide-react';
 
-const PRIORITY_STYLES = {
-  High: 'bg-red-500/15 text-red-400 border border-red-500/30',
-  Medium: 'bg-amber-500/15 text-amber-400 border border-amber-500/30',
-  Low: 'bg-green-500/15 text-green-400 border border-green-500/30',
+const BADGE = {
+  High: 'bg-[#ef4444]/10 text-[#f87171] border border-[#ef4444]/20',
+  Medium: 'bg-[#fbbf24]/10 text-[#fcd34d] border border-[#fbbf24]/20',
+  Low: 'bg-[#2dd4bf]/10 text-[#5eead4] border border-[#2dd4bf]/20',
 };
 
-const IMPACT_STYLES = {
-  High: 'bg-red-500/15 text-red-400 border border-red-500/30',
-  Medium: 'bg-amber-500/15 text-amber-400 border border-amber-500/30',
-  Low: 'bg-green-500/15 text-green-400 border border-green-500/30',
-};
-
-function PriorityBadge({ priority }) {
-  const style = PRIORITY_STYLES[priority] || PRIORITY_STYLES.Low;
+function Badge({ label }) {
   return (
-    <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${style}`}>
-      {priority}
-    </span>
-  );
-}
-
-function ImpactBadge({ impact }) {
-  const style = IMPACT_STYLES[impact] || IMPACT_STYLES.Low;
-  return (
-    <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${style}`}>
-      {impact} Impact
+    <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full whitespace-nowrap ${BADGE[label] || BADGE.Low}`}>
+      {label}
     </span>
   );
 }
 
 export default function Recommendations({ assessmentCompleted, assessmentResults }) {
-  const navigate = useNavigate();
+  const nav = useNavigate();
 
   if (!assessmentCompleted || !assessmentResults) {
     return (
-      <div className="min-h-screen bg-gray-950 px-4 py-6 flex items-center justify-center">
-        <div className="max-w-lg mx-auto text-center">
-          <div className="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Shield className="w-10 h-10 text-gray-500" />
+      <div className="min-h-screen bg-atmosphere flex items-center justify-center px-8 grain">
+        <div className="text-center max-w-sm">
+          <div className="w-24 h-24 bg-[#131c30] rounded-full flex items-center justify-center mx-auto mb-8 ring-1 ring-white/5">
+            <Shield className="w-11 h-11 text-[#3a4560]" />
           </div>
-          <h2 className="text-2xl font-bold text-white mb-3">No Assessment Yet</h2>
-          <p className="text-gray-400 mb-8 leading-relaxed">
-            Complete your cancer risk assessment to receive personalized recommendations.
+          <h2 className="text-2xl font-extrabold text-white mb-3" style={{ fontFamily: 'var(--font-display)' }}>No Recommendations Yet</h2>
+          <p className="text-[#5a6a8a] text-[15px] leading-relaxed mb-10">
+            Complete your assessment to receive personalized recommendations.
           </p>
-          <button
-            onClick={() => navigate('/assessment')}
-            className="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-8 py-3 rounded-xl transition-all duration-200 active:scale-95"
-          >
-            Start Assessment
-          </button>
+          <button onClick={() => nav('/assessment')} className="btn-primary max-w-[260px] mx-auto">Start Assessment</button>
         </div>
       </div>
     );
@@ -59,89 +38,74 @@ export default function Recommendations({ assessmentCompleted, assessmentResults
   const { screenings = [], lifestyle = [] } = assessmentResults;
 
   return (
-    <div className="min-h-screen bg-gray-950 px-4 py-6">
-      <div className="max-w-lg mx-auto">
-        <h1 className="text-2xl font-bold text-white mb-8">Your Recommendations</h1>
+    <div className="min-h-screen bg-atmosphere px-6 pt-10 pb-28 grain">
+      <div className="max-w-[480px] mx-auto">
+        <h1 className="text-[24px] font-extrabold text-white tracking-tight mb-10" style={{ fontFamily: 'var(--font-display)' }}>
+          Your Recommendations
+        </h1>
 
+        {/* Screenings */}
         {screenings.length > 0 && (
-          <section className="mb-10">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-blue-500/15 rounded-xl flex items-center justify-center">
-                <Stethoscope className="w-5 h-5 text-blue-400" />
+          <section className="mb-12">
+            <div className="flex items-center gap-3.5 mb-6">
+              <div className="w-10 h-10 bg-[#4f8cff]/10 rounded-xl flex items-center justify-center">
+                <Stethoscope className="w-5 h-5 text-[#4f8cff]" />
               </div>
-              <h2 className="text-lg font-semibold text-white">Recommended Screenings</h2>
+              <h2 className="text-[17px] font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>Recommended Screenings</h2>
             </div>
-            <div className="space-y-3">
-              {screenings.map((screening, index) => (
-                <div
-                  key={index}
-                  className="bg-gray-900 rounded-xl p-4 border border-gray-800 hover:border-gray-700 hover:scale-[1.01] transition-all duration-200 cursor-default"
-                >
-                  <div className="flex items-start justify-between gap-3 mb-2">
-                    <h3 className="text-white font-medium text-sm">{screening.test}</h3>
-                    <PriorityBadge priority={screening.priority} />
+            <div className="space-y-4">
+              {screenings.map((s, i) => (
+                <div key={i} className="card hover:ring-1 hover:ring-white/5 transition-all duration-200">
+                  <div className="flex items-start justify-between gap-4 mb-3">
+                    <h3 className="text-white font-semibold text-[15px]" style={{ fontFamily: 'var(--font-display)' }}>{s.test}</h3>
+                    {s.priority && <Badge label={s.priority} />}
                   </div>
-                  <div className="flex items-center gap-4 mb-2">
-                    {screening.frequency && (
-                      <p className="text-blue-400 text-xs font-medium">
-                        Every {screening.frequency}
-                      </p>
-                    )}
-                    {screening.startAge && (
-                      <p className="text-gray-500 text-xs">
-                        Starting age {screening.startAge}
-                      </p>
-                    )}
+                  <div className="flex items-center gap-5 mb-3">
+                    {s.frequency && <p className="text-[#4f8cff] text-[13px] font-medium">{s.frequency}</p>}
+                    {s.startAge && <p className="text-[#3a4560] text-[13px]">Starting age {s.startAge}</p>}
                   </div>
-                  {screening.description && (
-                    <p className="text-gray-500 text-xs leading-relaxed">{screening.description}</p>
-                  )}
+                  {s.description && <p className="text-[#5a6a8a] text-[13px] leading-relaxed">{s.description}</p>}
                 </div>
               ))}
             </div>
           </section>
         )}
 
+        {/* Lifestyle */}
         {lifestyle.length > 0 && (
-          <section className="mb-10">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-pink-500/15 rounded-xl flex items-center justify-center">
-                <Heart className="w-5 h-5 text-pink-400" />
+          <section className="mb-12">
+            <div className="flex items-center gap-3.5 mb-6">
+              <div className="w-10 h-10 bg-[#f472b6]/10 rounded-xl flex items-center justify-center">
+                <Heart className="w-5 h-5 text-[#f472b6]" />
               </div>
-              <h2 className="text-lg font-semibold text-white">Lifestyle Recommendations</h2>
+              <h2 className="text-[17px] font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>Lifestyle Changes</h2>
             </div>
-            <div className="space-y-3">
-              {lifestyle.map((item, index) => (
-                <div
-                  key={index}
-                  className="bg-gray-900 rounded-xl p-4 border border-gray-800 hover:border-gray-700 hover:scale-[1.01] transition-all duration-200 cursor-default"
-                >
-                  <div className="flex items-start justify-between gap-3 mb-2">
+            <div className="space-y-4">
+              {lifestyle.map((l, i) => (
+                <div key={i} className="card hover:ring-1 hover:ring-white/5 transition-all duration-200">
+                  <div className="flex items-start justify-between gap-4 mb-2">
                     <div>
-                      {item.category && (
-                        <p className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-1">
-                          {item.category}
-                        </p>
+                      {l.category && (
+                        <p className="text-[#3a4560] text-[11px] font-semibold uppercase tracking-wider mb-1.5">{l.category}</p>
                       )}
-                      <h3 className="text-white font-medium text-sm">{item.recommendation}</h3>
+                      <h3 className="text-white font-semibold text-[15px]" style={{ fontFamily: 'var(--font-display)' }}>{l.recommendation}</h3>
                     </div>
-                    {item.impact && <ImpactBadge impact={item.impact} />}
+                    {l.impact && <Badge label={l.impact} />}
                   </div>
-                  {item.description && (
-                    <p className="text-gray-500 text-xs leading-relaxed mt-2">{item.description}</p>
-                  )}
+                  {l.description && <p className="text-[#5a6a8a] text-[13px] leading-relaxed mt-3">{l.description}</p>}
                 </div>
               ))}
             </div>
           </section>
         )}
 
+        {/* Back */}
         <button
-          onClick={() => navigate('/dashboard')}
-          className="w-full bg-gray-800 hover:bg-gray-700 text-white font-semibold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.98]"
+          onClick={() => nav('/dashboard')}
+          className="btn-secondary flex items-center justify-center gap-2.5"
         >
+          <ArrowLeft className="w-4 h-4" />
           Back to Dashboard
-          <ChevronRight className="w-5 h-5" />
         </button>
       </div>
     </div>

@@ -1,691 +1,337 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { analyzeRisk } from '../services/api';
 
-const STEP_TITLES = [
-  { title: 'Basic Information', subtitle: 'Tell us about yourself' },
-  { title: 'Lifestyle', subtitle: 'Your daily habits and routines' },
-  { title: 'Medical History', subtitle: 'Past and family health background' },
-  { title: 'Current Symptoms', subtitle: 'Any symptoms you are experiencing' },
-  { title: 'Environment & Wellness', subtitle: 'Your surroundings and wellbeing' },
+const STEPS = [
+  { title: 'Basic Information', sub: 'Tell us about yourself' },
+  { title: 'Lifestyle', sub: 'Your daily habits and routines' },
+  { title: 'Medical History', sub: 'Past and family health background' },
+  { title: 'Current Symptoms', sub: 'Any symptoms you may be experiencing' },
+  { title: 'Environment & Wellness', sub: 'Your surroundings and wellbeing' },
 ];
 
 const LOADING_STEPS = [
-  { label: 'Analyzing your health profile...', threshold: 20 },
-  { label: 'Calculating risk factors...', threshold: 50 },
-  { label: 'Getting AI recommendations...', threshold: 80 },
-  { label: 'Preparing your results...', threshold: 100 },
+  { label: 'Analyzing your health profile...', at: 20 },
+  { label: 'Calculating risk factors...', at: 50 },
+  { label: 'Getting AI recommendations...', at: 80 },
+  { label: 'Preparing your results...', at: 100 },
 ];
 
-function calculateBMI(heightCm, weightKg) {
-  const heightM = heightCm / 100;
-  return (weightKg / (heightM * heightM)).toFixed(1);
+function bmi(h, w) {
+  const m = h / 100;
+  return (w / (m * m)).toFixed(1);
 }
 
-function calculateAge(dob) {
-  const birth = new Date(dob);
-  const today = new Date();
-  let age = today.getFullYear() - birth.getFullYear();
-  const m = today.getMonth() - birth.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
-  return age;
+function age(dob) {
+  const b = new Date(dob);
+  const t = new Date();
+  let a = t.getFullYear() - b.getFullYear();
+  const m = t.getMonth() - b.getMonth();
+  if (m < 0 || (m === 0 && t.getDate() < b.getDate())) a--;
+  return a;
 }
-
-const inputClass =
-  'w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent';
-const selectClass = inputClass + ' appearance-none';
-const labelClass = 'block text-sm font-medium text-gray-300 mb-1.5';
-const cardClass = 'bg-gray-900 rounded-2xl p-6 space-y-5';
-const checkboxClass = 'accent-blue-500 w-4 h-4 rounded';
-const sliderClass = 'accent-blue-500 w-full';
 
 export default function Assessment({ setAssessmentCompleted, setAssessmentResults }) {
-  const navigate = useNavigate();
+  const nav = useNavigate();
   const [step, setStep] = useState(0);
-  const [direction, setDirection] = useState(1);
-  const [animating, setAnimating] = useState(false);
+  const [dir, setDir] = useState(1);
+  const [anim, setAnim] = useState(false);
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
-  const [loadingProgress, setLoadingProgress] = useState(0);
-  const [submitError, setSubmitError] = useState('');
-  const containerRef = useRef(null);
+  const [progress, setProgress] = useState(0);
+  const [submitErr, setSubmitErr] = useState('');
+  const ref = useRef(null);
 
-  const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    dateOfBirth: '',
-    gender: '',
-    height: 170,
-    weight: 70,
-    smokingStatus: '',
-    alcoholConsumption: '',
-    physicalActivity: '',
-    diet: '',
+  const [f, setF] = useState({
+    firstName: '', lastName: '', dateOfBirth: '', gender: '',
+    height: 170, weight: 70,
+    smokingStatus: '', alcoholConsumption: '', physicalActivity: '', diet: '',
     familyHistory: { cancer: false, heartDisease: false, diabetes: false, other: '' },
     personalHistory: { cancer: false, surgeries: '', chronicConditions: '' },
     currentSymptoms: {
-      unexplainedWeightLoss: false,
-      fatigue: false,
-      fever: false,
-      pain: false,
-      digestiveIssues: false,
-      skinChanges: false,
-      other: '',
+      unexplainedWeightLoss: false, fatigue: false, fever: false,
+      pain: false, digestiveIssues: false, skinChanges: false, other: '',
     },
-    occupation: '',
-    exposureToToxins: false,
-    livingEnvironment: '',
-    stressLevel: 5,
-    sleepQuality: '',
+    occupation: '', exposureToToxins: false, livingEnvironment: '',
+    stressLevel: 5, sleepQuality: '',
   });
 
-  const set = (field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-    setErrors((prev) => ({ ...prev, [field]: undefined }));
-  };
+  const set = (k, v) => { setF(p => ({ ...p, [k]: v })); setErrors(p => ({ ...p, [k]: undefined })); };
+  const setN = (g, k, v) => { setF(p => ({ ...p, [g]: { ...p[g], [k]: v } })); };
 
-  const setNested = (group, field, value) => {
-    setFormData((prev) => ({
-      ...prev,
-      [group]: { ...prev[group], [field]: value },
-    }));
-  };
-
-  // --- Validation ---
-  function validateStep(s) {
+  function validate(s) {
     const e = {};
     if (s === 0) {
-      if (!formData.dateOfBirth) e.dateOfBirth = 'Date of birth is required';
-      if (!formData.gender) e.gender = 'Please select a gender';
+      if (!f.dateOfBirth) e.dateOfBirth = 'Required';
+      if (!f.gender) e.gender = 'Required';
     }
     setErrors(e);
-    return Object.keys(e).length === 0;
+    return !Object.keys(e).length;
   }
 
-  // --- Navigation ---
-  function goNext() {
-    if (!validateStep(step)) return;
-    if (step < 4) {
-      setDirection(1);
-      setAnimating(true);
-      setTimeout(() => {
-        setStep((s) => s + 1);
-        setAnimating(false);
-      }, 250);
-    }
+  function next() {
+    if (!validate(step) || step >= 4) return;
+    setDir(1); setAnim(true);
+    setTimeout(() => { setStep(s => s + 1); setAnim(false); }, 200);
   }
 
-  function goBack() {
-    if (step > 0) {
-      setDirection(-1);
-      setAnimating(true);
-      setTimeout(() => {
-        setStep((s) => s - 1);
-        setAnimating(false);
-      }, 250);
-    }
+  function back() {
+    if (step <= 0) return;
+    setDir(-1); setAnim(true);
+    setTimeout(() => { setStep(s => s - 1); setAnim(false); }, 200);
   }
 
-  // --- Submit ---
-  async function handleSubmit() {
-    if (!validateStep(step)) return;
-    setLoading(true);
-    setLoadingProgress(0);
-    setSubmitError('');
+  async function submit() {
+    if (!validate(step)) return;
+    setLoading(true); setProgress(0); setSubmitErr('');
 
-    const interval = setInterval(() => {
-      setLoadingProgress((p) => {
-        if (p >= 95) return p;
-        return p + Math.random() * 4 + 1;
-      });
+    const iv = setInterval(() => {
+      setProgress(p => p >= 95 ? p : p + Math.random() * 4 + 1);
     }, 120);
 
     try {
-      const age = calculateAge(formData.dateOfBirth);
-      const heightCm = formData.height;
-      const weightKg = formData.weight;
-
-      if (heightCm <= 0) {
-        throw new Error('Height must be greater than zero.');
-      }
-
-      const bmi = parseFloat(calculateBMI(heightCm, weightKg));
-
+      if (f.height <= 0) throw new Error('Height must be greater than zero.');
       const userData = {
-        age,
-        gender: formData.gender,
-        bmi,
-        lifestyle: {
-          smoking: formData.smokingStatus,
-          alcohol: formData.alcoholConsumption,
-          exercise: formData.physicalActivity,
-          diet: formData.diet,
-        },
-        medicalHistory: {
-          familyCancer: formData.familyHistory.cancer,
-          personalCancer: formData.personalHistory.cancer,
-          chronicConditions: formData.personalHistory.chronicConditions,
-          familyHeartDisease: formData.familyHistory.heartDisease,
-          familyDiabetes: formData.familyHistory.diabetes,
-          surgeries: formData.personalHistory.surgeries,
-        },
-        symptoms: {
-          unexplainedWeightLoss: formData.currentSymptoms.unexplainedWeightLoss,
-          fatigue: formData.currentSymptoms.fatigue,
-          fever: formData.currentSymptoms.fever,
-          pain: formData.currentSymptoms.pain,
-          digestiveIssues: formData.currentSymptoms.digestiveIssues,
-          skinChanges: formData.currentSymptoms.skinChanges,
-          other: formData.currentSymptoms.other,
-        },
-        environmentalFactors: {
-          toxinExposure: formData.exposureToToxins,
-          livingEnvironment: formData.livingEnvironment,
-          occupation: formData.occupation,
-        },
-        mentalHealth: {
-          stressLevel: formData.stressLevel,
-          sleepQuality: formData.sleepQuality,
-        },
+        age: age(f.dateOfBirth), gender: f.gender, bmi: parseFloat(bmi(f.height, f.weight)),
+        lifestyle: { smoking: f.smokingStatus, alcohol: f.alcoholConsumption, exercise: f.physicalActivity, diet: f.diet },
+        medicalHistory: { familyCancer: f.familyHistory.cancer, personalCancer: f.personalHistory.cancer, chronicConditions: f.personalHistory.chronicConditions, familyHeartDisease: f.familyHistory.heartDisease, familyDiabetes: f.familyHistory.diabetes, surgeries: f.personalHistory.surgeries },
+        symptoms: { unexplainedWeightLoss: f.currentSymptoms.unexplainedWeightLoss, fatigue: f.currentSymptoms.fatigue, fever: f.currentSymptoms.fever, pain: f.currentSymptoms.pain, digestiveIssues: f.currentSymptoms.digestiveIssues, skinChanges: f.currentSymptoms.skinChanges, other: f.currentSymptoms.other },
+        environmentalFactors: { toxinExposure: f.exposureToToxins, livingEnvironment: f.livingEnvironment, occupation: f.occupation },
+        mentalHealth: { stressLevel: f.stressLevel, sleepQuality: f.sleepQuality },
       };
-
-      const response = await analyzeRisk(userData);
-
-      clearInterval(interval);
-      setLoadingProgress(100);
-
-      await new Promise((r) => setTimeout(r, 600));
-
-      setAssessmentCompleted(true);
-      setAssessmentResults(response);
-      navigate('/dashboard');
+      const res = await analyzeRisk(userData);
+      clearInterval(iv); setProgress(100);
+      await new Promise(r => setTimeout(r, 500));
+      setAssessmentCompleted(true); setAssessmentResults(res); nav('/dashboard');
     } catch (err) {
-      clearInterval(interval);
-      setLoading(false);
-      setLoadingProgress(0);
-      setSubmitError(err.message || 'Something went wrong. Please try again.');
+      clearInterval(iv); setLoading(false); setProgress(0);
+      setSubmitErr(err.message || 'Something went wrong. Please try again.');
     }
   }
 
-  const currentLoadingLabel =
-    LOADING_STEPS.find((s) => loadingProgress < s.threshold)?.label ||
-    LOADING_STEPS[LOADING_STEPS.length - 1].label;
+  const loadLabel = LOADING_STEPS.find(s => progress < s.at)?.label || LOADING_STEPS[3].label;
+  const tx = anim
+    ? { opacity: 0, transform: `translateX(${dir * 40}px)`, transition: 'all 0.2s ease' }
+    : { opacity: 1, transform: 'translateX(0)', transition: 'all 0.2s ease' };
 
-  // --- Transition style ---
-  const transitionStyle = animating
-    ? {
-        opacity: 0,
-        transform: `translateX(${direction * 60}px)`,
-        transition: 'opacity 0.25s ease, transform 0.25s ease',
-      }
-    : {
-        opacity: 1,
-        transform: 'translateX(0)',
-        transition: 'opacity 0.25s ease, transform 0.25s ease',
-      };
+  const Label = ({ children, required }) => (
+    <label className="block text-[13px] font-medium text-[#8b9cc0] mb-2.5" style={{ fontFamily: 'var(--font-display)' }}>
+      {children} {required && <span className="text-[#f472b6]">*</span>}
+    </label>
+  );
 
-  const bmi = calculateBMI(formData.height, formData.weight);
+  const SectionTitle = ({ children }) => (
+    <h3 className="text-white font-bold text-[17px] mb-1" style={{ fontFamily: 'var(--font-display)' }}>{children}</h3>
+  );
 
-  // --- Steps ---
+  const Check = ({ label, checked, onChange }) => (
+    <label className="flex items-center gap-3.5 text-[#b0bdd4] text-[15px] cursor-pointer py-1.5 hover:text-white transition-colors">
+      <input type="checkbox" checked={checked} onChange={onChange} />
+      {label}
+    </label>
+  );
+
   function renderStep() {
     switch (step) {
-      case 0:
-        return (
-          <div className={cardClass}>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      case 0: return (
+        <div className="space-y-6">
+          <div className="card">
+            <div className="grid grid-cols-2 gap-5">
               <div>
-                <label className={labelClass}>First Name</label>
-                <input
-                  type="text"
-                  className={inputClass}
-                  placeholder="John"
-                  value={formData.firstName}
-                  onChange={(e) => set('firstName', e.target.value)}
-                />
+                <Label>First Name</Label>
+                <input type="text" className="input-field" placeholder="John" value={f.firstName} onChange={e => set('firstName', e.target.value)} />
               </div>
               <div>
-                <label className={labelClass}>Last Name</label>
-                <input
-                  type="text"
-                  className={inputClass}
-                  placeholder="Doe"
-                  value={formData.lastName}
-                  onChange={(e) => set('lastName', e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className={labelClass}>
-                Date of Birth <span className="text-red-400">*</span>
-              </label>
-              <input
-                type="date"
-                className={inputClass}
-                value={formData.dateOfBirth}
-                onChange={(e) => set('dateOfBirth', e.target.value)}
-              />
-              {errors.dateOfBirth && (
-                <p className="text-red-400 text-sm mt-1">{errors.dateOfBirth}</p>
-              )}
-            </div>
-
-            <div>
-              <label className={labelClass}>
-                Gender <span className="text-red-400">*</span>
-              </label>
-              <div className="flex flex-wrap gap-4 mt-1">
-                {['Male', 'Female', 'Prefer not to say'].map((g) => (
-                  <label key={g} className="flex items-center gap-2 text-gray-300 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="gender"
-                      className="accent-blue-500 w-4 h-4"
-                      checked={formData.gender === g}
-                      onChange={() => set('gender', g)}
-                    />
-                    {g}
-                  </label>
-                ))}
-              </div>
-              {errors.gender && <p className="text-red-400 text-sm mt-1">{errors.gender}</p>}
-            </div>
-
-            <div>
-              <label className={labelClass}>Height: {formData.height} cm</label>
-              <input
-                type="range"
-                min={100}
-                max={250}
-                className={sliderClass}
-                value={formData.height}
-                onChange={(e) => set('height', Number(e.target.value))}
-              />
-              <div className="flex justify-between text-xs text-gray-500">
-                <span>100 cm</span>
-                <span>250 cm</span>
-              </div>
-            </div>
-
-            <div>
-              <label className={labelClass}>Weight: {formData.weight} kg</label>
-              <input
-                type="range"
-                min={30}
-                max={200}
-                className={sliderClass}
-                value={formData.weight}
-                onChange={(e) => set('weight', Number(e.target.value))}
-              />
-              <div className="flex justify-between text-xs text-gray-500">
-                <span>30 kg</span>
-                <span>200 kg</span>
-              </div>
-            </div>
-
-            <div className="bg-gray-800 rounded-xl px-4 py-3 text-center">
-              <span className="text-gray-400 text-sm">BMI: </span>
-              <span className="text-white font-semibold text-lg">{bmi}</span>
-            </div>
-          </div>
-        );
-
-      case 1:
-        return (
-          <div className={cardClass}>
-            <div>
-              <label className={labelClass}>Smoking Status</label>
-              <select
-                className={selectClass}
-                value={formData.smokingStatus}
-                onChange={(e) => set('smokingStatus', e.target.value)}
-              >
-                <option value="">Select...</option>
-                <option value="never">Never</option>
-                <option value="former">Former</option>
-                <option value="current">Current</option>
-              </select>
-            </div>
-
-            <div>
-              <label className={labelClass}>Alcohol Consumption</label>
-              <select
-                className={selectClass}
-                value={formData.alcoholConsumption}
-                onChange={(e) => set('alcoholConsumption', e.target.value)}
-              >
-                <option value="">Select...</option>
-                <option value="none">None</option>
-                <option value="occasional">Occasional</option>
-                <option value="moderate">Moderate</option>
-                <option value="frequent">Frequent</option>
-              </select>
-            </div>
-
-            <div>
-              <label className={labelClass}>Physical Activity</label>
-              <select
-                className={selectClass}
-                value={formData.physicalActivity}
-                onChange={(e) => set('physicalActivity', e.target.value)}
-              >
-                <option value="">Select...</option>
-                <option value="sedentary">Sedentary</option>
-                <option value="light">Light</option>
-                <option value="moderate">Moderate</option>
-                <option value="active">Active</option>
-              </select>
-            </div>
-
-            <div>
-              <label className={labelClass}>Diet</label>
-              <select
-                className={selectClass}
-                value={formData.diet}
-                onChange={(e) => set('diet', e.target.value)}
-              >
-                <option value="">Select...</option>
-                <option value="balanced">Balanced</option>
-                <option value="vegetarian">Vegetarian</option>
-                <option value="vegan">Vegan</option>
-                <option value="processed">Processed</option>
-              </select>
-            </div>
-          </div>
-        );
-
-      case 2:
-        return (
-          <div className="space-y-6">
-            <div className={cardClass}>
-              <h3 className="text-white font-semibold text-lg">Family History</h3>
-              <div className="space-y-3">
-                {[
-                  ['cancer', 'Cancer'],
-                  ['heartDisease', 'Heart Disease'],
-                  ['diabetes', 'Diabetes'],
-                ].map(([key, label]) => (
-                  <label key={key} className="flex items-center gap-3 text-gray-300 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      className={checkboxClass}
-                      checked={formData.familyHistory[key]}
-                      onChange={(e) => setNested('familyHistory', key, e.target.checked)}
-                    />
-                    {label}
-                  </label>
-                ))}
-              </div>
-              <div>
-                <label className={labelClass}>Other family conditions</label>
-                <textarea
-                  className={inputClass + ' resize-none'}
-                  rows={3}
-                  placeholder="Any other relevant family health history..."
-                  value={formData.familyHistory.other}
-                  onChange={(e) => setNested('familyHistory', 'other', e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className={cardClass}>
-              <h3 className="text-white font-semibold text-lg">Personal History</h3>
-              <label className="flex items-center gap-3 text-gray-300 cursor-pointer">
-                <input
-                  type="checkbox"
-                  className={checkboxClass}
-                  checked={formData.personalHistory.cancer}
-                  onChange={(e) => setNested('personalHistory', 'cancer', e.target.checked)}
-                />
-                History of cancer
-              </label>
-              <div>
-                <label className={labelClass}>Previous surgeries</label>
-                <textarea
-                  className={inputClass + ' resize-none'}
-                  rows={2}
-                  placeholder="List any previous surgeries..."
-                  value={formData.personalHistory.surgeries}
-                  onChange={(e) => setNested('personalHistory', 'surgeries', e.target.value)}
-                />
-              </div>
-              <div>
-                <label className={labelClass}>Chronic conditions</label>
-                <textarea
-                  className={inputClass + ' resize-none'}
-                  rows={2}
-                  placeholder="List any chronic conditions..."
-                  value={formData.personalHistory.chronicConditions}
-                  onChange={(e) => setNested('personalHistory', 'chronicConditions', e.target.value)}
-                />
+                <Label>Last Name</Label>
+                <input type="text" className="input-field" placeholder="Doe" value={f.lastName} onChange={e => set('lastName', e.target.value)} />
               </div>
             </div>
           </div>
-        );
-
-      case 3:
-        return (
-          <div className={cardClass}>
-            <p className="text-gray-400 text-sm">
-              Check any symptoms you are currently experiencing.
-            </p>
-            <div className="space-y-3">
-              {[
-                ['unexplainedWeightLoss', 'Unexplained weight loss'],
-                ['fatigue', 'Fatigue'],
-                ['fever', 'Recurring fever'],
-                ['pain', 'Persistent pain'],
-                ['digestiveIssues', 'Digestive issues'],
-                ['skinChanges', 'Skin changes'],
-              ].map(([key, label]) => (
-                <label key={key} className="flex items-center gap-3 text-gray-300 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    className={checkboxClass}
-                    checked={formData.currentSymptoms[key]}
-                    onChange={(e) => setNested('currentSymptoms', key, e.target.checked)}
-                  />
-                  {label}
+          <div className="card">
+            <Label required>Date of Birth</Label>
+            <input type="date" className="input-field" value={f.dateOfBirth} onChange={e => set('dateOfBirth', e.target.value)} />
+            {errors.dateOfBirth && <p className="text-[#f472b6] text-sm mt-2">{errors.dateOfBirth}</p>}
+          </div>
+          <div className="card">
+            <Label required>Gender</Label>
+            <div className="flex flex-wrap gap-4 mt-1">
+              {['Male', 'Female', 'Prefer not to say'].map(g => (
+                <label key={g} className="flex items-center gap-2.5 text-[#b0bdd4] text-[15px] cursor-pointer hover:text-white transition-colors">
+                  <input type="radio" name="gender" checked={f.gender === g} onChange={() => set('gender', g)} />
+                  {g}
                 </label>
               ))}
             </div>
-            <div>
-              <label className={labelClass}>Other symptoms</label>
-              <textarea
-                className={inputClass + ' resize-none'}
-                rows={3}
-                placeholder="Describe any other symptoms..."
-                value={formData.currentSymptoms.other}
-                onChange={(e) => setNested('currentSymptoms', 'other', e.target.value)}
-              />
-            </div>
+            {errors.gender && <p className="text-[#f472b6] text-sm mt-2">{errors.gender}</p>}
           </div>
-        );
-
-      case 4:
-        return (
-          <div className={cardClass}>
+          <div className="card space-y-6">
             <div>
-              <label className={labelClass}>Occupation</label>
-              <input
-                type="text"
-                className={inputClass}
-                placeholder="e.g. Software Engineer"
-                value={formData.occupation}
-                onChange={(e) => set('occupation', e.target.value)}
-              />
-            </div>
-
-            <label className="flex items-center gap-3 text-gray-300 cursor-pointer">
-              <input
-                type="checkbox"
-                className={checkboxClass}
-                checked={formData.exposureToToxins}
-                onChange={(e) => set('exposureToToxins', e.target.checked)}
-              />
-              Regular exposure to toxins or hazardous materials
-            </label>
-
-            <div>
-              <label className={labelClass}>Living Environment</label>
-              <select
-                className={selectClass}
-                value={formData.livingEnvironment}
-                onChange={(e) => set('livingEnvironment', e.target.value)}
-              >
-                <option value="">Select...</option>
-                <option value="urban">Urban</option>
-                <option value="suburban">Suburban</option>
-                <option value="rural">Rural</option>
-              </select>
-            </div>
-
-            <div>
-              <label className={labelClass}>Stress Level: {formData.stressLevel}/10</label>
-              <input
-                type="range"
-                min={0}
-                max={10}
-                className={sliderClass}
-                value={formData.stressLevel}
-                onChange={(e) => set('stressLevel', Number(e.target.value))}
-              />
-              <div className="flex justify-between text-xs text-gray-500">
-                <span>Low</span>
-                <span>High</span>
+              <div className="flex justify-between items-baseline mb-3">
+                <Label>Height</Label>
+                <span className="text-white font-bold text-lg" style={{ fontFamily: 'var(--font-display)' }}>{f.height} cm</span>
               </div>
+              <input type="range" min={100} max={250} value={f.height} onChange={e => set('height', +e.target.value)} />
+              <div className="flex justify-between text-xs text-[#3a4560] mt-1"><span>100 cm</span><span>250 cm</span></div>
             </div>
-
             <div>
-              <label className={labelClass}>Sleep Quality</label>
-              <select
-                className={selectClass}
-                value={formData.sleepQuality}
-                onChange={(e) => set('sleepQuality', e.target.value)}
-              >
-                <option value="">Select...</option>
-                <option value="poor">Poor</option>
-                <option value="fair">Fair</option>
-                <option value="good">Good</option>
-                <option value="excellent">Excellent</option>
-              </select>
+              <div className="flex justify-between items-baseline mb-3">
+                <Label>Weight</Label>
+                <span className="text-white font-bold text-lg" style={{ fontFamily: 'var(--font-display)' }}>{f.weight} kg</span>
+              </div>
+              <input type="range" min={30} max={200} value={f.weight} onChange={e => set('weight', +e.target.value)} />
+              <div className="flex justify-between text-xs text-[#3a4560] mt-1"><span>30 kg</span><span>200 kg</span></div>
+            </div>
+            <div className="bg-[#0c1221] rounded-2xl px-5 py-4 text-center border border-white/[0.03]">
+              <span className="text-[#5a6a8a] text-sm">Body Mass Index</span>
+              <p className="text-white font-extrabold text-2xl mt-1" style={{ fontFamily: 'var(--font-display)' }}>{bmi(f.height, f.weight)}</p>
             </div>
           </div>
-        );
+        </div>
+      );
 
-      default:
-        return null;
+      case 1: return (
+        <div className="card space-y-6">
+          <div><Label>Smoking Status</Label><select className="select-field" value={f.smokingStatus} onChange={e => set('smokingStatus', e.target.value)}>
+            <option value="">Select...</option><option value="never">Never smoked</option><option value="former">Former smoker</option><option value="current">Current smoker</option>
+          </select></div>
+          <div><Label>Alcohol Consumption</Label><select className="select-field" value={f.alcoholConsumption} onChange={e => set('alcoholConsumption', e.target.value)}>
+            <option value="">Select...</option><option value="none">None</option><option value="occasional">Occasional (1-2/week)</option><option value="moderate">Moderate (3-7/week)</option><option value="frequent">Frequent (8+/week)</option>
+          </select></div>
+          <div><Label>Physical Activity</Label><select className="select-field" value={f.physicalActivity} onChange={e => set('physicalActivity', e.target.value)}>
+            <option value="">Select...</option><option value="sedentary">Sedentary</option><option value="light">Light (1-3 days/week)</option><option value="moderate">Moderate (3-5 days/week)</option><option value="active">Active (6-7 days/week)</option>
+          </select></div>
+          <div><Label>Diet Type</Label><select className="select-field" value={f.diet} onChange={e => set('diet', e.target.value)}>
+            <option value="">Select...</option><option value="balanced">Balanced</option><option value="vegetarian">Vegetarian</option><option value="vegan">Vegan</option><option value="processed">Mostly processed foods</option>
+          </select></div>
+        </div>
+      );
+
+      case 2: return (
+        <div className="space-y-6">
+          <div className="card space-y-5">
+            <SectionTitle>Family History</SectionTitle>
+            <div className="space-y-1">
+              <Check label="Cancer" checked={f.familyHistory.cancer} onChange={e => setN('familyHistory', 'cancer', e.target.checked)} />
+              <Check label="Heart Disease" checked={f.familyHistory.heartDisease} onChange={e => setN('familyHistory', 'heartDisease', e.target.checked)} />
+              <Check label="Diabetes" checked={f.familyHistory.diabetes} onChange={e => setN('familyHistory', 'diabetes', e.target.checked)} />
+            </div>
+            <div>
+              <Label>Other conditions</Label>
+              <textarea className="input-field resize-none" rows={3} placeholder="Any other relevant family history..." value={f.familyHistory.other} onChange={e => setN('familyHistory', 'other', e.target.value)} />
+            </div>
+          </div>
+          <div className="card space-y-5">
+            <SectionTitle>Personal History</SectionTitle>
+            <Check label="Previous cancer diagnosis" checked={f.personalHistory.cancer} onChange={e => setN('personalHistory', 'cancer', e.target.checked)} />
+            <div>
+              <Label>Previous surgeries</Label>
+              <textarea className="input-field resize-none" rows={2} placeholder="List any previous surgeries..." value={f.personalHistory.surgeries} onChange={e => setN('personalHistory', 'surgeries', e.target.value)} />
+            </div>
+            <div>
+              <Label>Chronic conditions</Label>
+              <textarea className="input-field resize-none" rows={2} placeholder="List any chronic conditions..." value={f.personalHistory.chronicConditions} onChange={e => setN('personalHistory', 'chronicConditions', e.target.value)} />
+            </div>
+          </div>
+        </div>
+      );
+
+      case 3: return (
+        <div className="card space-y-5">
+          <p className="text-[#5a6a8a] text-sm">Check any symptoms you are currently experiencing.</p>
+          <div className="space-y-1">
+            {[['unexplainedWeightLoss','Unexplained weight loss'],['fatigue','Persistent fatigue'],['fever','Recurring fever'],['pain','Persistent pain'],['digestiveIssues','Digestive issues'],['skinChanges','Skin changes']].map(([k,l]) => (
+              <Check key={k} label={l} checked={f.currentSymptoms[k]} onChange={e => setN('currentSymptoms', k, e.target.checked)} />
+            ))}
+          </div>
+          <div>
+            <Label>Other symptoms</Label>
+            <textarea className="input-field resize-none" rows={3} placeholder="Describe any other symptoms..." value={f.currentSymptoms.other} onChange={e => setN('currentSymptoms', 'other', e.target.value)} />
+          </div>
+        </div>
+      );
+
+      case 4: return (
+        <div className="card space-y-6">
+          <div><Label>Occupation</Label><input type="text" className="input-field" placeholder="e.g. Software Engineer" value={f.occupation} onChange={e => set('occupation', e.target.value)} /></div>
+          <Check label="Regular exposure to toxins or hazardous materials" checked={f.exposureToToxins} onChange={e => set('exposureToToxins', e.target.checked)} />
+          <div><Label>Living Environment</Label><select className="select-field" value={f.livingEnvironment} onChange={e => set('livingEnvironment', e.target.value)}>
+            <option value="">Select...</option><option value="urban">Urban</option><option value="suburban">Suburban</option><option value="rural">Rural</option>
+          </select></div>
+          <div>
+            <div className="flex justify-between items-baseline mb-3">
+              <Label>Stress Level</Label>
+              <span className="text-white font-bold text-lg" style={{ fontFamily: 'var(--font-display)' }}>{f.stressLevel}/10</span>
+            </div>
+            <input type="range" min={0} max={10} value={f.stressLevel} onChange={e => set('stressLevel', +e.target.value)} />
+            <div className="flex justify-between text-xs text-[#3a4560] mt-1"><span>Low</span><span>High</span></div>
+          </div>
+          <div><Label>Sleep Quality</Label><select className="select-field" value={f.sleepQuality} onChange={e => set('sleepQuality', e.target.value)}>
+            <option value="">Select...</option><option value="poor">Poor (&lt;5 hours)</option><option value="fair">Fair (5-7 hours)</option><option value="good">Good (7-9 hours)</option><option value="excellent">Excellent (9+ hours)</option>
+          </select></div>
+        </div>
+      );
+
+      default: return null;
     }
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 px-4 py-8">
-      <div className="max-w-lg mx-auto">
-        {/* Progress bar */}
-        <div className="mb-8">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-sm text-gray-400">
-              Step {step + 1} of 5
-            </span>
-            <span className="text-sm text-gray-400">
-              {Math.round(((step + 1) / 5) * 100)}%
-            </span>
+    <div className="min-h-screen bg-atmosphere px-6 pt-10 pb-12 grain">
+      <div className="max-w-[480px] mx-auto">
+        {/* Progress */}
+        <div className="mb-10">
+          <div className="flex justify-between items-center mb-3">
+            <span className="text-[13px] font-medium text-[#5a6a8a]">Step {step + 1} of 5</span>
+            <span className="text-[13px] font-bold text-[#4f8cff]">{Math.round(((step + 1) / 5) * 100)}%</span>
           </div>
-          <div className="w-full h-2 bg-gray-800 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-blue-500 rounded-full"
-              style={{
-                width: `${((step + 1) / 5) * 100}%`,
-                transition: 'width 0.4s ease',
-              }}
-            />
+          <div className="w-full h-[6px] bg-[#131c30] rounded-full overflow-hidden">
+            <div className="h-full rounded-full bg-gradient-to-r from-[#4f8cff] to-[#2dd4bf]" style={{ width: `${((step + 1) / 5) * 100}%`, transition: 'width 0.4s cubic-bezier(0.4, 0, 0.2, 1)' }} />
           </div>
         </div>
 
         {/* Step title */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-white">{STEP_TITLES[step].title}</h1>
-          <p className="text-gray-400 mt-1">{STEP_TITLES[step].subtitle}</p>
+        <div className="mb-8">
+          <h1 className="text-[26px] font-extrabold text-white tracking-tight" style={{ fontFamily: 'var(--font-display)' }}>{STEPS[step].title}</h1>
+          <p className="text-[#5a6a8a] text-sm mt-1.5">{STEPS[step].sub}</p>
         </div>
 
-        {/* Error banner */}
-        {submitError && (
-          <div className="mb-4 bg-red-900/40 border border-red-700 rounded-xl px-4 py-3 text-red-300 text-sm">
-            {submitError}
-          </div>
+        {/* Error */}
+        {submitErr && (
+          <div className="mb-6 bg-red-500/8 border border-red-500/15 rounded-2xl px-5 py-4 text-red-400 text-sm">{submitErr}</div>
         )}
 
-        {/* Form content */}
-        <div ref={containerRef} style={transitionStyle}>
-          {renderStep()}
-        </div>
+        {/* Form */}
+        <div ref={ref} style={tx}>{renderStep()}</div>
 
-        {/* Navigation buttons */}
-        <div className="flex justify-between mt-8 gap-4">
+        {/* Nav buttons */}
+        <div className="flex gap-4 mt-10">
           {step > 0 ? (
-            <button
-              type="button"
-              onClick={goBack}
-              disabled={animating}
-              className="flex-1 py-3 rounded-xl border border-gray-700 text-gray-300 font-medium hover:bg-gray-800 transition-colors disabled:opacity-50"
-            >
-              Back
-            </button>
-          ) : (
-            <div className="flex-1" />
-          )}
-
+            <button onClick={back} disabled={anim} className="btn-secondary flex-1">Back</button>
+          ) : <div className="flex-1" />}
           {step < 4 ? (
-            <button
-              type="button"
-              onClick={goNext}
-              disabled={animating}
-              className="flex-1 py-3 rounded-xl bg-blue-500 text-white font-medium hover:bg-blue-600 transition-colors disabled:opacity-50"
-            >
-              Next
-            </button>
+            <button onClick={next} disabled={anim} className="btn-primary flex-1">Next</button>
           ) : (
-            <button
-              type="button"
-              onClick={handleSubmit}
-              disabled={animating || loading}
-              className="flex-1 py-3 rounded-xl bg-blue-500 text-white font-medium hover:bg-blue-600 transition-colors disabled:opacity-50"
-            >
-              Submit Assessment
-            </button>
+            <button onClick={submit} disabled={anim || loading} className="btn-primary flex-1">Submit Assessment</button>
           )}
         </div>
       </div>
 
       {/* Loading overlay */}
       {loading && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-gray-900 rounded-2xl p-8 max-w-sm w-full shadow-2xl shadow-blue-500/10">
-            {/* Pulsing glow ring */}
-            <div className="flex justify-center mb-6">
-              <div className="relative w-16 h-16">
-                <div className="absolute inset-0 rounded-full bg-blue-500/20 animate-ping" />
-                <div className="absolute inset-2 rounded-full bg-blue-500/30 animate-pulse" />
-                <div className="absolute inset-4 rounded-full bg-blue-500 animate-pulse" />
+        <div className="fixed inset-0 z-50 bg-[#05080f]/90 backdrop-blur-md flex items-center justify-center p-8">
+          <div className="card max-w-sm w-full text-center">
+            <div className="flex justify-center mb-8">
+              <div className="relative w-20 h-20">
+                <div className="absolute inset-0 rounded-full bg-[#4f8cff]/15 animate-ping" />
+                <div className="absolute inset-3 rounded-full bg-[#4f8cff]/20 animate-pulse" />
+                <div className="absolute inset-6 rounded-full bg-[#4f8cff]" />
               </div>
             </div>
-
-            {/* Progress bar */}
-            <div className="w-full h-2 bg-gray-800 rounded-full overflow-hidden mb-4">
-              <div
-                className="h-full bg-blue-500 rounded-full"
-                style={{
-                  width: `${Math.min(loadingProgress, 100)}%`,
-                  transition: 'width 0.3s ease',
-                }}
-              />
+            <div className="w-full h-[6px] bg-[#131c30] rounded-full overflow-hidden mb-5">
+              <div className="h-full rounded-full bg-gradient-to-r from-[#4f8cff] to-[#2dd4bf]" style={{ width: `${Math.min(progress, 100)}%`, transition: 'width 0.3s ease' }} />
             </div>
-
-            {/* Step label */}
-            <p className="text-white text-center font-medium">{currentLoadingLabel}</p>
-            <p className="text-gray-500 text-center text-sm mt-1">
-              {Math.round(Math.min(loadingProgress, 100))}%
-            </p>
+            <p className="text-white font-semibold text-[15px]" style={{ fontFamily: 'var(--font-display)' }}>{loadLabel}</p>
+            <p className="text-[#3a4560] text-sm mt-2">{Math.round(Math.min(progress, 100))}%</p>
           </div>
         </div>
       )}

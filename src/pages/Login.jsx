@@ -22,17 +22,14 @@ export default function Login({ setIsLoggedIn }) {
       setIsLoggedIn(true);
       navigate('/dashboard');
     } catch (err) {
-      if (err.code === 'auth/user-not-found') {
-        setError('No account found with this email.');
-      } else if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
-        setError('Incorrect password. Please try again.');
-      } else if (err.code === 'auth/invalid-email') {
-        setError('Please enter a valid email address.');
-      } else if (err.code === 'auth/too-many-requests') {
-        setError('Too many failed attempts. Please try again later.');
-      } else {
-        setError('Failed to log in. Please try again.');
-      }
+      const messages = {
+        'auth/user-not-found': 'No account found with this email.',
+        'auth/wrong-password': 'Incorrect password. Please try again.',
+        'auth/invalid-credential': 'Incorrect password. Please try again.',
+        'auth/invalid-email': 'Please enter a valid email address.',
+        'auth/too-many-requests': 'Too many failed attempts. Please try again later.',
+      };
+      setError(messages[err.code] || 'Failed to log in. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -49,84 +46,94 @@ export default function Login({ setIsLoggedIn }) {
       await sendPasswordResetEmail(auth, email);
       setResetMessage('Password reset email sent. Check your inbox.');
     } catch (err) {
-      if (err.code === 'auth/user-not-found') {
-        setResetError('No account found with this email.');
-      } else if (err.code === 'auth/invalid-email') {
-        setResetError('Please enter a valid email address.');
-      } else {
-        setResetError('Failed to send reset email. Please try again.');
-      }
+      const messages = {
+        'auth/user-not-found': 'No account found with this email.',
+        'auth/invalid-email': 'Please enter a valid email address.',
+      };
+      setResetError(messages[err.code] || 'Failed to send reset email.');
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-950 flex items-center justify-center px-4">
-      <div className="w-full max-w-md mx-auto">
+    <div className="min-h-screen bg-atmosphere flex items-center justify-center px-6 py-12 grain">
+      <div className="w-full max-w-[420px] mx-auto">
+        {/* Back */}
         <button
           onClick={() => navigate('/onboarding')}
-          className="mb-6 text-gray-400 hover:text-white transition-colors"
+          className="mb-10 p-2 -ml-2 rounded-xl text-[#5a6a8a] hover:text-white hover:bg-white/5 transition-all duration-200"
         >
-          <ArrowLeft className="w-6 h-6" />
+          <ArrowLeft className="w-5 h-5" />
         </button>
 
-        <div className="bg-gray-900 rounded-2xl p-8">
-          <h1 className="text-2xl font-bold text-white mb-6">Welcome Back</h1>
+        {/* Card */}
+        <div className="card">
+          <h1
+            className="text-[28px] font-extrabold text-white tracking-tight mb-2"
+            style={{ fontFamily: 'var(--font-display)' }}
+          >
+            Welcome Back
+          </h1>
+          <p className="text-[#5a6a8a] text-sm mb-8">Sign in to continue your health journey</p>
 
-          <form onSubmit={handleLogin} className="space-y-4">
+          <form onSubmit={handleLogin} className="space-y-5">
             <div>
+              <label className="block text-[13px] font-medium text-[#8b9cc0] mb-2">Email</label>
               <input
                 type="email"
-                placeholder="Email"
+                placeholder="you@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                className="input-field"
               />
             </div>
 
             <div>
+              <label className="block text-[13px] font-medium text-[#8b9cc0] mb-2">Password</label>
               <input
                 type="password"
-                placeholder="Password"
+                placeholder="Enter your password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                className="input-field"
               />
             </div>
 
             {error && (
-              <p className="text-red-500 text-sm">{error}</p>
+              <div className="bg-red-500/8 border border-red-500/15 rounded-xl px-4 py-3">
+                <p className="text-red-400 text-sm">{error}</p>
+              </div>
             )}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors disabled:opacity-50"
-            >
-              {loading ? 'Logging in...' : 'Login'}
-            </button>
+            <div className="pt-2">
+              <button type="submit" disabled={loading} className="btn-primary">
+                {loading ? 'Signing in...' : 'Sign In'}
+              </button>
+            </div>
           </form>
 
-          <div className="mt-4 text-center">
+          {/* Forgot password */}
+          <div className="mt-6 text-center">
             <button
               type="button"
               onClick={handleForgotPassword}
-              className="text-blue-400 hover:text-blue-300 text-sm transition-colors"
+              className="text-[#4f8cff] hover:text-[#6ba0ff] text-sm font-medium transition-colors bg-transparent border-none cursor-pointer"
             >
               Forgot Password?
             </button>
             {resetMessage && (
-              <p className="text-green-500 text-sm mt-2">{resetMessage}</p>
+              <p className="text-emerald-400 text-sm mt-3 bg-emerald-500/8 border border-emerald-500/15 rounded-xl px-4 py-3">{resetMessage}</p>
             )}
             {resetError && (
-              <p className="text-red-500 text-sm mt-2">{resetError}</p>
+              <p className="text-red-400 text-sm mt-3 bg-red-500/8 border border-red-500/15 rounded-xl px-4 py-3">{resetError}</p>
             )}
           </div>
 
-          <p className="mt-6 text-center text-gray-400 text-sm">
-            Don't have an account?{' '}
-            <Link to="/signup" className="text-blue-400 hover:text-blue-300 transition-colors">
+          {/* Footer link */}
+          <p className="mt-8 text-center text-[#5a6a8a] text-sm">
+            Don&apos;t have an account?{' '}
+            <Link to="/signup" className="text-[#4f8cff] hover:text-[#6ba0ff] font-medium transition-colors">
               Sign Up
             </Link>
           </p>

@@ -20,74 +20,81 @@ export default function Signup({ setIsLoggedIn }) {
       setIsLoggedIn(true);
       navigate('/welcome');
     } catch (err) {
-      if (err.code === 'auth/email-already-in-use') {
-        setError('An account with this email already exists.');
-      } else if (err.code === 'auth/invalid-email') {
-        setError('Please enter a valid email address.');
-      } else if (err.code === 'auth/weak-password') {
-        setError('Password must be at least 6 characters.');
-      } else {
-        setError('Failed to create account. Please try again.');
-      }
+      const messages = {
+        'auth/email-already-in-use': 'An account with this email already exists.',
+        'auth/invalid-email': 'Please enter a valid email address.',
+        'auth/weak-password': 'Password must be at least 6 characters.',
+      };
+      setError(messages[err.code] || 'Failed to create account. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-950 flex items-center justify-center px-4">
-      <div className="w-full max-w-md mx-auto">
+    <div className="min-h-screen bg-atmosphere flex items-center justify-center px-6 py-12 grain">
+      <div className="w-full max-w-[420px] mx-auto">
+        {/* Back */}
         <button
           onClick={() => navigate('/onboarding')}
-          className="mb-6 text-gray-400 hover:text-white transition-colors"
+          className="mb-10 p-2 -ml-2 rounded-xl text-[#5a6a8a] hover:text-white hover:bg-white/5 transition-all duration-200"
         >
-          <ArrowLeft className="w-6 h-6" />
+          <ArrowLeft className="w-5 h-5" />
         </button>
 
-        <div className="bg-gray-900 rounded-2xl p-8">
-          <h1 className="text-2xl font-bold text-white mb-6">Create Account</h1>
+        {/* Card */}
+        <div className="card">
+          <h1
+            className="text-[28px] font-extrabold text-white tracking-tight mb-2"
+            style={{ fontFamily: 'var(--font-display)' }}
+          >
+            Create Account
+          </h1>
+          <p className="text-[#5a6a8a] text-sm mb-8">Join us to track your health insights</p>
 
-          <form onSubmit={handleSignup} className="space-y-4">
+          <form onSubmit={handleSignup} className="space-y-5">
             <div>
+              <label className="block text-[13px] font-medium text-[#8b9cc0] mb-2">Email</label>
               <input
                 type="email"
-                placeholder="Email"
+                placeholder="you@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                className="input-field"
               />
             </div>
 
             <div>
+              <label className="block text-[13px] font-medium text-[#8b9cc0] mb-2">Password</label>
               <input
                 type="password"
-                placeholder="Password"
+                placeholder="Create a password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                className="input-field"
               />
-              <p className="text-gray-500 text-xs mt-1.5 ml-1">Must be at least 6 characters</p>
+              <p className="text-[#3a4560] text-xs mt-2 ml-1">Must be at least 6 characters</p>
             </div>
 
             {error && (
-              <p className="text-red-500 text-sm">{error}</p>
+              <div className="bg-red-500/8 border border-red-500/15 rounded-xl px-4 py-3">
+                <p className="text-red-400 text-sm">{error}</p>
+              </div>
             )}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors disabled:opacity-50"
-            >
-              {loading ? 'Creating account...' : 'Sign Up'}
-            </button>
+            <div className="pt-2">
+              <button type="submit" disabled={loading} className="btn-primary">
+                {loading ? 'Creating account...' : 'Create Account'}
+              </button>
+            </div>
           </form>
 
-          <p className="mt-6 text-center text-gray-400 text-sm">
+          <p className="mt-8 text-center text-[#5a6a8a] text-sm">
             Already have an account?{' '}
-            <Link to="/login" className="text-blue-400 hover:text-blue-300 transition-colors">
-              Login
+            <Link to="/login" className="text-[#4f8cff] hover:text-[#6ba0ff] font-medium transition-colors">
+              Sign In
             </Link>
           </p>
         </div>
