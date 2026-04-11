@@ -28,7 +28,11 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 // ── Risk Calculation (baseline) ──
 function calculateBaselineRisks(userData) {
-  const { age, gender, bmi, lifestyle, medicalHistory, symptoms, environmentalFactors } = userData;
+  const { age, gender, bmi } = userData;
+  const lifestyle = userData.lifestyle || {};
+  const medicalHistory = userData.medicalHistory || {};
+  const symptoms = userData.symptoms || {};
+  const environmentalFactors = userData.environmentalFactors || {};
 
   let base = 5;
   if (age > 50) base += 15;
@@ -49,7 +53,7 @@ function calculateBaselineRisks(userData) {
 
   // Symptom contribution
   const symptomKeys = ['unexplainedWeightLoss', 'fatigue', 'fever', 'pain', 'digestiveIssues', 'skinChanges'];
-  const activeSymptoms = symptomKeys.filter(k => symptoms?.[k]).length;
+  const activeSymptoms = symptomKeys.filter(k => symptoms[k]).length;
   base += activeSymptoms * 3;
 
   base = Math.min(base, 95);
@@ -58,7 +62,7 @@ function calculateBaselineRisks(userData) {
   let lung = base;
   if (lifestyle.smoking === 'current') lung += 30;
   else if (lifestyle.smoking === 'former') lung += 15;
-  if (environmentalFactors?.toxinExposure) lung += 20;
+  if (environmentalFactors.toxinExposure) lung += 20;
 
   let colorectal = base;
   if (age > 50) colorectal += 20;
@@ -78,11 +82,11 @@ function calculateBaselineRisks(userData) {
   }
 
   return {
-    general: { name: 'General Cancer Risk', risk: Math.min(base, 95) },
-    lung: { name: 'Lung Cancer', risk: Math.min(lung, 95) },
-    colorectal: { name: 'Colorectal Cancer', risk: Math.min(colorectal, 95) },
-    breast: { name: 'Breast Cancer', risk: Math.min(breast, 95) },
-    prostate: { name: 'Prostate Cancer', risk: Math.min(prostate, 95) },
+    general: { name: 'General Cancer Risk', risk: Math.min(base, 95), reasoning: 'Based on age, BMI, lifestyle, and symptom factors.' },
+    lung: { name: 'Lung Cancer', risk: Math.min(lung, 95), reasoning: 'Based on smoking status and environmental exposure.' },
+    colorectal: { name: 'Colorectal Cancer', risk: Math.min(colorectal, 95), reasoning: 'Based on age, family history, and diet.' },
+    breast: { name: 'Breast Cancer', risk: Math.min(breast, 95), reasoning: 'Based on gender, age, and family history.' },
+    prostate: { name: 'Prostate Cancer', risk: Math.min(prostate, 95), reasoning: 'Based on gender, age, and family history.' },
   };
 }
 
@@ -91,8 +95,8 @@ app.post('/api/assess', async (req, res) => {
   try {
     const userData = req.body;
 
-    if (!userData || !userData.age || !userData.gender) {
-      return res.status(400).json({ error: 'Missing required fields: age, gender' });
+    if (!userData || userData.age == null || !userData.gender) {
+      return res.status(400).json({ message: 'Missing required fields: age, gender' });
     }
 
     // Step 1: Calculate baseline risks
@@ -109,11 +113,11 @@ Based on the following user health profile and our baseline statistical risk est
 
 User Profile:
 - Age: ${userData.age}, Gender: ${userData.gender}, BMI: ${userData.bmi}
-- Smoking: ${userData.lifestyle.smoking}, Alcohol: ${userData.lifestyle.alcohol}
-- Exercise: ${userData.lifestyle.exercise}, Diet: ${userData.lifestyle.diet}
-- Family history of cancer: ${userData.medicalHistory.familyCancer}
-- Personal cancer history: ${userData.medicalHistory.personalCancer}
-- Chronic conditions: ${userData.medicalHistory.chronicConditions || 'None'}
+- Smoking: ${userData.lifestyle?.smoking || 'Unknown'}, Alcohol: ${userData.lifestyle?.alcohol || 'Unknown'}
+- Exercise: ${userData.lifestyle?.exercise || 'Unknown'}, Diet: ${userData.lifestyle?.diet || 'Unknown'}
+- Family history of cancer: ${userData.medicalHistory?.familyCancer || false}
+- Personal cancer history: ${userData.medicalHistory?.personalCancer || false}
+- Chronic conditions: ${userData.medicalHistory?.chronicConditions || 'None'}
 - Toxin exposure: ${userData.environmentalFactors?.toxinExposure || false}
 - Stress level: ${userData.mentalHealth?.stressLevel || 'Unknown'}/10
 - Sleep quality: ${userData.mentalHealth?.sleepQuality || 'Unknown'}
@@ -176,7 +180,7 @@ IMPORTANT: Respond ONLY with valid JSON in this exact structure (no markdown, no
     res.json(aiResponse);
   } catch (error) {
     console.error('Assessment error:', error.message);
-    res.status(500).json({ error: 'Failed to process assessment. Please try again.' });
+    res.status(500).json({ message: 'Failed to process assessment. Please try again.' });
   }
 });
 
