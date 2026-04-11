@@ -1,17 +1,26 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { auth } from './config/firebase';
 import ErrorBoundary from './components/ErrorBoundary';
 import Layout from './components/Layout';
-import FactScreen from './pages/FactScreen';
-import Onboarding from './pages/Onboarding';
-import WelcomeScreen from './pages/WelcomeScreen';
-import Login from './pages/Login';
-import Signup from './pages/Signup';
-import Assessment from './pages/Assessment';
-import Dashboard from './pages/Dashboard';
-import Recommendations from './pages/Recommendations';
-import Profile from './pages/Profile';
+
+const FactScreen = lazy(() => import('./pages/FactScreen'));
+const Onboarding = lazy(() => import('./pages/Onboarding'));
+const WelcomeScreen = lazy(() => import('./pages/WelcomeScreen'));
+const Login = lazy(() => import('./pages/Login'));
+const Signup = lazy(() => import('./pages/Signup'));
+const Assessment = lazy(() => import('./pages/Assessment'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Recommendations = lazy(() => import('./pages/Recommendations'));
+const Profile = lazy(() => import('./pages/Profile'));
+
+function LoadingFallback() {
+  return (
+    <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+      <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+}
 
 const PROTECTED_ROUTES = ['/dashboard', '/recommendations', '/profile'];
 
@@ -29,6 +38,7 @@ function AppContent() {
 
   return (
     <Layout showNavbar={showNavbar}>
+      <Suspense fallback={<LoadingFallback />}>
       <Routes>
         <Route path="/" element={<FactScreen />} />
         <Route path="/onboarding" element={<Onboarding />} />
@@ -73,6 +83,7 @@ function AppContent() {
           }
         />
       </Routes>
+      </Suspense>
     </Layout>
   );
 }
