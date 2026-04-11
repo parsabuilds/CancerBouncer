@@ -60,13 +60,13 @@ export default function Dashboard({ assessmentCompleted, assessmentResults }) {
 
   const { cancerRisks, summary } = assessmentResults;
 
-  const filteredRisks = Object.entries(cancerRisks)
-    .filter(([, data]) => data.risk > 0)
+  const filteredRisks = Object.entries(cancerRisks || {})
+    .filter(([, data]) => data && data.risk > 0)
     .map(([key, data]) => ({
       key,
-      name: data.name,
+      name: data.name || key,
       risk: data.risk,
-      reasoning: data.reasoning,
+      reasoning: data.reasoning || '',
       color: CANCER_COLORS[key] || '#6b7280',
     }));
 

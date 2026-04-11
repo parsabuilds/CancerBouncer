@@ -142,12 +142,51 @@ export default function Assessment({ setAssessmentCompleted, setAssessmentResult
 
     try {
       const age = calculateAge(formData.dateOfBirth);
-      const bmi = parseFloat(calculateBMI(formData.height, formData.weight));
+      const heightCm = formData.height;
+      const weightKg = formData.weight;
+
+      if (heightCm <= 0) {
+        throw new Error('Height must be greater than zero.');
+      }
+
+      const bmi = parseFloat(calculateBMI(heightCm, weightKg));
 
       const userData = {
-        ...formData,
         age,
+        gender: formData.gender,
         bmi,
+        lifestyle: {
+          smoking: formData.smokingStatus,
+          alcohol: formData.alcoholConsumption,
+          exercise: formData.physicalActivity,
+          diet: formData.diet,
+        },
+        medicalHistory: {
+          familyCancer: formData.familyHistory.cancer,
+          personalCancer: formData.personalHistory.cancer,
+          chronicConditions: formData.personalHistory.chronicConditions,
+          familyHeartDisease: formData.familyHistory.heartDisease,
+          familyDiabetes: formData.familyHistory.diabetes,
+          surgeries: formData.personalHistory.surgeries,
+        },
+        symptoms: {
+          unexplainedWeightLoss: formData.currentSymptoms.unexplainedWeightLoss,
+          fatigue: formData.currentSymptoms.fatigue,
+          fever: formData.currentSymptoms.fever,
+          pain: formData.currentSymptoms.pain,
+          digestiveIssues: formData.currentSymptoms.digestiveIssues,
+          skinChanges: formData.currentSymptoms.skinChanges,
+          other: formData.currentSymptoms.other,
+        },
+        environmentalFactors: {
+          toxinExposure: formData.exposureToToxins,
+          livingEnvironment: formData.livingEnvironment,
+          occupation: formData.occupation,
+        },
+        mentalHealth: {
+          stressLevel: formData.stressLevel,
+          sleepQuality: formData.sleepQuality,
+        },
       };
 
       const response = await analyzeRisk(userData);
