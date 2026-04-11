@@ -23,8 +23,12 @@ export default function Navbar() {
               }`
             }
           >
-            <Icon size={22} strokeWidth={isActive => isActive ? 2.5 : 1.5} />
-            <span className="text-[11px] font-medium">{label}</span>
+            {({ isActive }) => (
+              <>
+                <Icon size={22} strokeWidth={isActive ? 2.5 : 1.5} />
+                <span className="text-[11px] font-medium">{label}</span>
+              </>
+            )}
           </NavLink>
         ))}
       </div>
