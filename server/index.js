@@ -1,4 +1,10 @@
-import 'dotenv/config';
+import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: join(__dirname, '.env') });
+
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -19,7 +25,7 @@ app.use(express.json({ limit: '10kb' }));
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 30,
-  message: { error: 'Too many requests, please try again later.' },
+  message: { message: 'Too many requests, please try again later.' },
 });
 app.use('/api/', limiter);
 
