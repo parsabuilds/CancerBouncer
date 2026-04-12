@@ -25,10 +25,10 @@ export default function Layout({ children, showNavbar }) {
 
           {/* Phone screen — the actual app lives here */}
           <div className="phone-screen">
-            <div className="min-h-full w-full" style={{ background: 'var(--bg-base)' }}>
+            <div className="phone-scroll-area" style={{ background: 'var(--bg-base)' }}>
               <main className={showNavbar ? 'pb-24' : ''}>{children}</main>
-              {showNavbar && <Navbar />}
             </div>
+            {showNavbar && <Navbar />}
           </div>
 
           {/* Bottom bar indicator */}

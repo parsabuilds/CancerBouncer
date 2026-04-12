@@ -58,7 +58,7 @@ export default function Dashboard({ assessmentCompleted, assessmentResults }) {
         {/* Summary */}
         {summary && (
           <div className="card !border-l-[3px] !border-l-[#4f8cff] mb-10">
-            <p className="text-[#8b9cc0] text-[15px] leading-[1.8]">{summary}</p>
+            <p className="text-white text-[15px] leading-[1.8]">{summary}</p>
           </div>
         )}
 
@@ -82,12 +82,12 @@ export default function Dashboard({ assessmentCompleted, assessmentResults }) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-12">
           {risks.map(r => (
             <div key={r.key} className="card !p-6 !border-l-[3px]" style={{ borderLeftColor: r.color }}>
-              <p className="text-[#5a6a8a] text-xs font-semibold uppercase tracking-wider mb-3">{r.name}</p>
+              <p className="text-white text-sm font-semibold uppercase tracking-wider mb-3">{r.name}</p>
               <p className="text-[32px] font-extrabold mb-4" style={{ color: r.color, fontFamily: 'var(--font-display)' }}>{r.risk}%</p>
               <div className="w-full bg-[#0c1221] rounded-full h-1.5 mb-4">
                 <div className="h-full rounded-full transition-all duration-700" style={{ width: `${r.risk}%`, backgroundColor: r.color }} />
               </div>
-              <p className="text-[#3a4560] text-xs leading-relaxed">{r.reasoning}</p>
+              <p className="text-white text-sm leading-relaxed">{r.reasoning}</p>
             </div>
           ))}
         </div>

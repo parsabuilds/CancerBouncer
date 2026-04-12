@@ -53,9 +53,9 @@ export default function Recommendations({ assessmentCompleted, assessmentResults
                   </div>
                   <div className="flex items-center gap-6 mb-4">
                     {s.frequency && <p className="text-[#4f8cff] text-sm font-medium">{s.frequency}</p>}
-                    {s.startAge && <p className="text-[#3a4560] text-sm">Starting age {s.startAge}</p>}
+                    {s.startAge && <p className="text-white text-sm">Starting age {s.startAge}</p>}
                   </div>
-                  {s.description && <p className="text-[#5a6a8a] text-sm leading-relaxed">{s.description}</p>}
+                  {s.description && <p className="text-white text-sm leading-relaxed">{s.description}</p>}
                 </div>
               ))}
             </div>
@@ -75,12 +75,12 @@ export default function Recommendations({ assessmentCompleted, assessmentResults
                 <div key={i} className="card hover:ring-1 hover:ring-white/5 transition-all duration-200">
                   <div className="flex items-start justify-between gap-4 mb-3">
                     <div>
-                      {l.category && <p className="text-[#3a4560] text-xs font-semibold uppercase tracking-wider mb-2">{l.category}</p>}
+                      {l.category && <p className="text-white text-sm font-semibold uppercase tracking-wider mb-2">{l.category}</p>}
                       <h3 className="text-white font-semibold text-base" style={{ fontFamily: 'var(--font-display)' }}>{l.recommendation}</h3>
                     </div>
                     {l.impact && <Badge label={l.impact} />}
                   </div>
-                  {l.description && <p className="text-[#5a6a8a] text-sm leading-relaxed mt-3">{l.description}</p>}
+                  {l.description && <p className="text-white text-sm leading-relaxed mt-3">{l.description}</p>}
                 </div>
               ))}
             </div>

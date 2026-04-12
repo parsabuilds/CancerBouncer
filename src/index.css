@@ -396,25 +396,24 @@
     width: 100%;
     height: 100%;
     border-radius: 42px;
-    overflow-y: auto;
-    overflow-x: hidden;
+    overflow: hidden;
     background: var(--bg-base);
     position: relative;
-    /* Contain fixed-positioned children within the phone screen */
-    transform: translateZ(0);
-    /* Flex column so children can fill height via flex instead of vh */
     display: flex;
     flex-direction: column;
   }
 
-  /* Make the Layout wrapper and main fill the phone screen */
-  .phone-screen > div {
+  /* Scrollable content area — navbar sits outside this */
+  .phone-scroll-area {
     flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    min-height: 0;
     display: flex;
     flex-direction: column;
-    min-height: 0;
   }
-  .phone-screen > div > main {
+
+  .phone-scroll-area > main {
     flex: 1;
     display: flex;
     flex-direction: column;
@@ -422,14 +421,23 @@
   }
 
   /* Override min-h-screen (100vh) inside the phone frame to fill container instead */
-  .phone-screen > div > main > div {
+  .phone-scroll-area > main > div {
     flex: 1;
     min-height: 0 !important;
   }
 
-  .phone-screen::-webkit-scrollbar { width: 2px; }
-  .phone-screen::-webkit-scrollbar-track { background: transparent; }
-  .phone-screen::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 999px; }
+  /* Navbar inside phone frame: no fixed positioning needed, it's outside the scroll area */
+  .phone-screen > nav {
+    position: relative;
+    bottom: auto;
+    left: auto;
+    right: auto;
+    flex-shrink: 0;
+  }
+
+  .phone-scroll-area::-webkit-scrollbar { width: 2px; }
+  .phone-scroll-area::-webkit-scrollbar-track { background: transparent; }
+  .phone-scroll-area::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 999px; }
 
   .phone-home-bar {
     position: absolute;
