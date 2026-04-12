@@ -428,6 +428,7 @@
     position: relative;
     display: flex;
     flex-direction: column;
+    transform: translateZ(0); /* contain fixed-position children within the phone frame */
   }
 
   /* Scrollable content area — navbar sits outside this */
