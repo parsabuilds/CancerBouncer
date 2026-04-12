@@ -125,18 +125,18 @@ export default function FactScreen() {
             pointerEvents: i === current ? 'auto' : 'none',
           }}
         >
-          {/* Mobile image */}
+          {/* Mobile image (also used inside desktop phone frame) */}
           <img
             src={screen.mobile}
             alt=""
-            className="block lg:hidden w-full h-full object-cover"
+            className="fact-img-mobile w-full h-full object-cover"
             draggable={false}
           />
-          {/* Desktop image */}
+          {/* Desktop image (only outside phone frame) */}
           <img
             src={screen.desktop}
             alt=""
-            className="hidden lg:block w-full h-full object-cover"
+            className="fact-img-desktop w-full h-full object-cover"
             draggable={false}
           />
         </div>
