@@ -13,6 +13,7 @@ const Assessment = lazy(() => import('./pages/Assessment'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Recommendations = lazy(() => import('./pages/Recommendations'));
 const Profile = lazy(() => import('./pages/Profile'));
+const InstallGuide = lazy(() => import('./pages/InstallGuide'));
 
 function LoadingFallback() {
   return (
@@ -41,6 +42,7 @@ function AppContent() {
       <Suspense fallback={<LoadingFallback />}>
       <Routes>
         <Route path="/" element={<FactScreen />} />
+        <Route path="/install" element={<InstallGuide />} />
         <Route path="/onboarding" element={<Onboarding />} />
         <Route path="/welcome" element={<WelcomeScreen setIsLoggedIn={setIsLoggedIn} />} />
         <Route path="/login" element={<Login setIsLoggedIn={setIsLoggedIn} />} />

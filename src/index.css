@@ -319,6 +319,33 @@
     -webkit-backdrop-filter: blur(12px);
   }
 
+  .desktop-install-link {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 16px;
+    flex-shrink: 0;
+    padding: 8px 18px;
+    border-radius: 999px;
+    background: rgba(79, 140, 255, 0.04);
+    border: 1px solid rgba(79, 140, 255, 0.1);
+    color: rgba(79, 140, 255, 0.6);
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  .desktop-install-link:hover {
+    background: rgba(79, 140, 255, 0.1);
+    color: rgba(79, 140, 255, 1);
+    border-color: rgba(79, 140, 255, 0.25);
+  }
+
   .phone-frame {
     position: relative;
     z-index: 1;
