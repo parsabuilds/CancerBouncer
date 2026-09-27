@@ -250,10 +250,6 @@
   /* Inside the phone frame, keep mobile images */
   .phone-screen .fact-img-mobile { display: block !important; }
   .phone-screen .fact-img-desktop { display: none !important; }
-
-  /* Outside the phone frame (mobile-wrapper on desktop — hidden anyway) */
-  .mobile-wrapper .fact-img-mobile { display: none; }
-  .mobile-wrapper .fact-img-desktop { display: block; }
 }
 
 /* On actual small screens, always show mobile image */
@@ -262,18 +258,27 @@
   .fact-img-desktop { display: none; }
 }
 
-/* ── Desktop phone frame ── */
-.mobile-wrapper {
-  display: block;
+/* ── Desktop phone frame ──
+   The app renders once. On phones the frame's wrappers do nothing and its decorations are hidden.
+   The frame needs some height too, so a phone turned sideways (wide but short) isn't framed. */
+.desktop-wrapper,
+.phone-frame,
+.phone-screen {
+  display: contents;
 }
-.desktop-wrapper {
+.desktop-bg,
+.desktop-message,
+.desktop-install-link,
+.phone-notch,
+.phone-home-bar {
   display: none;
 }
+.phone-scroll-area {
+  min-height: 100vh;
+  width: 100%;
+}
 
-@media (min-width: 769px) {
-  .mobile-wrapper {
-    display: none !important;
-  }
+@media (min-width: 769px) and (min-height: 560px) {
   .desktop-wrapper {
     display: flex;
     flex-direction: column;
@@ -288,6 +293,7 @@
   }
 
   .desktop-bg {
+    display: block;
     position: fixed;
     inset: 0;
     z-index: 0;
@@ -347,6 +353,7 @@
   }
 
   .phone-frame {
+    display: block;
     position: relative;
     z-index: 1;
     width: min(393px, 42vh);
@@ -468,6 +475,7 @@
   .phone-scroll-area::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 999px; }
 
   .phone-home-bar {
+    display: block;
     position: absolute;
     bottom: 18px;
     left: 50%;
@@ -480,5 +488,13 @@
     height: 5px;
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.2);
+  }
+}
+
+/* Inside the phone the window is wide but the screen isn't, so undo the few sm: (wide-screen) classes the pages use. */
+@layer utilities {
+  @media (min-width: 769px) and (min-height: 560px) {
+    .phone-screen .sm\:grid-cols-2 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+    .phone-screen .sm\:\!p-10 { padding: calc(var(--spacing) * 8) !important; }
   }
 }
